@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/yegors/co-atc/internal/adsb"
+	"github.com/yegors/co-atc/internal/models"
 	"github.com/yegors/co-atc/internal/weather"
 )
 
@@ -18,15 +19,8 @@ type ChatSession struct {
 	LastActivity    time.Time `json:"last_activity"`
 }
 
-// ChatMessage represents a message in the chat session
-type ChatMessage struct {
-	ID        string    `json:"id"`
-	SessionID string    `json:"session_id"`
-	Type      string    `json:"type"` // "user", "assistant", "system"
-	Content   string    `json:"content"`
-	Timestamp time.Time `json:"timestamp"`
-	AudioData []byte    `json:"audio_data,omitempty"`
-}
+// Use shared models
+type ChatMessage = models.ChatMessage
 
 // AirspaceContext represents the current airspace data for AI context
 type AirspaceContext struct {

@@ -18,6 +18,12 @@ type TemplatingService interface {
 	GetTemplateContext(opts FormattingOptions) (*TemplateContext, error)
 }
 
+// ChatStorage interface for logging chat messages
+type ChatStorage interface {
+	StoreMessage(ctx context.Context, sessionID, role, content string) error
+	GetMessagesBySession(sessionID string) ([]*ChatMessage, error)
+}
+
 // Import templating types
 type FormattingOptions = templating.FormattingOptions
 type TemplateContext = templating.TemplateContext
@@ -33,6 +39,7 @@ type Service struct {
 	templatingService TemplatingService
 	config            *config.ATCChatConfig
 	logger            *logger.Logger
+	chatStorage       ChatStorage
 
 	// Session management
 	sessions   map[string]*ChatSession
@@ -51,6 +58,7 @@ type Service struct {
 // NewService creates a new ATC chat service
 func NewService(
 	templatingService TemplatingService,
+	chatStorage ChatStorage,
 	config *config.Config,
 	logger *logger.Logger,
 ) (*Service, error) {
@@ -87,6 +95,7 @@ func NewService(
 		templatingService: templatingService,
 		config:            &config.ATCChat,
 		logger:            logger.Named("atc-chat-service"),
+		chatStorage:       chatStorage,
 		sessions:          make(map[string]*ChatSession),
 		wsConnections:     make(map[string]chan string),
 		ctx:               ctx,
@@ -243,6 +252,23 @@ func (s *Service) UpdateSessionContext(ctx context.Context, sessionID string) er
 
 	s.logger.Debug("Updated session context",
 		logger.String("session_id", sessionID))
+
+	return nil
+}
+
+// LogChatMessage stores a chat message in the database
+func (s *Service) LogChatMessage(ctx context.Context, sessionID, role, content string) error {
+	if s.chatStorage == nil {
+		return nil
+	}
+
+	if err := s.chatStorage.StoreMessage(ctx, sessionID, role, content); err != nil {
+		s.logger.Error("Failed to log chat message",
+			logger.String("session_id", sessionID),
+			logger.String("role", role),
+			logger.Error(err))
+		return err
+	}
 
 	return nil
 }

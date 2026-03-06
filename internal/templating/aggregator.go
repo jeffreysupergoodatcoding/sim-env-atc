@@ -8,7 +8,6 @@ import (
 	"github.com/yegors/co-atc/internal/adsb"
 	"github.com/yegors/co-atc/internal/config"
 	"github.com/yegors/co-atc/internal/frequencies"
-	"github.com/yegors/co-atc/internal/storage/sqlite"
 	"github.com/yegors/co-atc/internal/weather"
 	"github.com/yegors/co-atc/pkg/logger"
 )
@@ -17,7 +16,7 @@ import (
 type DataAggregator struct {
 	adsbService          *adsb.Service
 	weatherService       *weather.Service
-	transcriptionStorage *sqlite.TranscriptionStorage
+	transcriptionStorage TranscriptionStore
 	frequencyService     *frequencies.Service
 	config               *config.Config
 	logger               *logger.Logger
@@ -27,7 +26,7 @@ type DataAggregator struct {
 func NewDataAggregator(
 	adsbService *adsb.Service,
 	weatherService *weather.Service,
-	transcriptionStorage *sqlite.TranscriptionStorage,
+	transcriptionStorage TranscriptionStore,
 	frequencyService *frequencies.Service,
 	config *config.Config,
 	logger *logger.Logger,

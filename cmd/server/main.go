@@ -16,6 +16,7 @@ import (
 	"github.com/yegors/co-atc/internal/api"
 	"github.com/yegors/co-atc/internal/atcchat"
 	"github.com/yegors/co-atc/internal/config"
+	"github.com/yegors/co-atc/internal/demo"
 	"github.com/yegors/co-atc/internal/frequencies"
 	"github.com/yegors/co-atc/internal/simulation"
 	"github.com/yegors/co-atc/internal/storage/sqlite"
@@ -132,6 +133,7 @@ func main() {
 		cfg.FlightPhases,
 		wsServer,
 		simulationService,
+		cfg.DemoMode,
 	)
 
 	// Create and set WebSocket message handler for ADSB
@@ -199,8 +201,13 @@ func main() {
 	var atcChatService *atcchat.Service
 	if cfg.ATCChat.Enabled {
 		log.Info("Creating ATC Chat service")
+
+		// Create chat storage
+		chatStorage := sqlite.NewChatStorage(sqliteStorage.GetDB(), log)
+
 		atcChatService, err = atcchat.NewService(
 			templateService,
+			chatStorage,
 			cfg,
 			log,
 		)
@@ -215,8 +222,11 @@ func main() {
 		log.Info("ATC Chat service disabled in configuration")
 	}
 
+	// Create Demo service
+	demoService := demo.NewService(simulationService, log)
+
 	// Create API router
-	router := api.NewRouter(adsbService, frequenciesService, weatherService, atcChatService, simulationService, cfg, log, wsServer, transcriptionStorage, clearanceStorage)
+	router := api.NewRouter(adsbService, frequenciesService, weatherService, atcChatService, simulationService, demoService, cfg, log, wsServer, transcriptionStorage, clearanceStorage)
 
 	// --- Setup for multiple HTTP servers ---
 	var servers []*http.Server

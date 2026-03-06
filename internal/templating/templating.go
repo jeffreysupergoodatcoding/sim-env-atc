@@ -1,13 +1,20 @@
 package templating
 
 import (
+	"time"
+
 	"github.com/yegors/co-atc/internal/adsb"
 	"github.com/yegors/co-atc/internal/config"
 	"github.com/yegors/co-atc/internal/frequencies"
-	"github.com/yegors/co-atc/internal/storage/sqlite"
+	"github.com/yegors/co-atc/internal/models"
 	"github.com/yegors/co-atc/internal/weather"
 	"github.com/yegors/co-atc/pkg/logger"
 )
+
+// TranscriptionStore interface for transcription storage
+type TranscriptionStore interface {
+	GetTranscriptionsByTimeRange(start, end time.Time, limit, offset int) ([]*models.TranscriptionRecord, error)
+}
 
 // Service provides the main templating functionality
 type Service struct {
@@ -20,7 +27,7 @@ type Service struct {
 func NewService(
 	adsbService *adsb.Service,
 	weatherService *weather.Service,
-	transcriptionStorage *sqlite.TranscriptionStorage,
+	transcriptionStorage TranscriptionStore,
 	frequencyService *frequencies.Service,
 	config *config.Config,
 	logger *logger.Logger,

@@ -22,6 +22,7 @@ type Config struct {
 	Weather        WeatherConfig        `toml:"wx"`              // Weather data fetching and caching settings
 	ATCChat        ATCChatConfig        `toml:"atc_chat"`        // ATC Chat voice assistant settings
 	Templating     TemplatingConfig     `toml:"templating"`      // Shared templating system settings
+	DemoMode       bool                 `toml:"demo_mode"`       // NEW: Global demo mode toggle
 }
 
 // ServerConfig contains HTTP server configuration settings

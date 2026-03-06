@@ -119,6 +119,7 @@ type SimulationService interface {
 	IsSimulated(hex string) bool
 	GetAllAircraft() interface{}                // Returns simulation aircraft data
 	GetAircraft(hex string) (interface{}, bool) // Returns specific simulated aircraft
+	RegisterAircraft(hex, flight string, lat, lon, altitude, heading, speed, verticalRate float64) (interface{}, error)
 }
 
 // Service is the main service for ADS-B data processing
@@ -148,6 +149,7 @@ type Service struct {
 	changeDetector     *ChangeDetector           // Tracks aircraft changes
 	broadcastChan      chan []AircraftChange     // Channel for broadcasting changes
 	simulationService  SimulationService         // Simulation service for simulated aircraft
+	demoMode           bool                      // Whether demo mode is enabled
 }
 
 // AircraftBulkResponse represents server response with bulk aircraft data
@@ -170,6 +172,7 @@ func NewService(
 	flightPhasesConfig config.FlightPhasesConfig,
 	wsServer WebSocketServer,
 	simulationService SimulationService,
+	demoMode bool,
 ) *Service {
 	// Set default signal lost timeout if not configured
 	signalLostTimeout := time.Duration(adsbCfg.SignalLostTimeoutSecs) * time.Second
@@ -193,6 +196,7 @@ func NewService(
 		signalLostTimeout:  signalLostTimeout,
 		flightPhasesConfig: flightPhasesConfig,
 		simulationService:  simulationService,
+		demoMode:           demoMode,
 	}
 
 	// CRITICAL FIX: Only enable WebSocket streaming if configured
@@ -232,6 +236,18 @@ func NewService(
 	if stationCfg.RunwaysDBPath != "" {
 		if err := service.loadRunwayData(stationCfg.RunwaysDBPath); err != nil {
 			service.logger.Error("Failed to load runway data: " + err.Error())
+		}
+	}
+
+	// Register demo aircraft if in demo mode
+	if demoMode && simulationService != nil {
+		for _, a := range DemoAircraft {
+			if a.ADSB != nil {
+				_, _ = simulationService.RegisterAircraft(
+					a.Hex, a.Flight, a.ADSB.Lat, a.ADSB.Lon,
+					a.ADSB.AltBaro, a.ADSB.TrueHeading, a.ADSB.TAS, 0,
+				)
+			}
 		}
 	}
 
@@ -640,15 +656,34 @@ func (s *Service) updateSimulationFields(aircraft []*Aircraft) {
 	}
 }
 
-// GetAllAircraft returns all aircraft
 func (s *Service) GetAllAircraft() []*Aircraft {
-	aircraft := s.storage.GetAll()
+	var aircraft []*Aircraft
+	if s.demoMode {
+		// Return the 3 demo aircraft with latest positions from storage
+		for _, da := range DemoAircraft {
+			if a, ok := s.storage.GetByHex(da.Hex); ok {
+				aircraft = append(aircraft, a)
+			} else {
+				aircraft = append(aircraft, da)
+			}
+		}
+	} else {
+		aircraft = s.storage.GetAll()
+	}
 	s.updateSimulationFields(aircraft)
 	return aircraft
 }
 
 // GetAircraftByHex returns an aircraft by its hex ID
 func (s *Service) GetAircraftByHex(hex string) (*Aircraft, bool) {
+	if s.demoMode {
+		for _, a := range DemoAircraft {
+			if a.Hex == hex {
+				s.updateSimulationFields([]*Aircraft{a})
+				return a, true
+			}
+		}
+	}
 	aircraft, found := s.storage.GetByHex(hex)
 	if found && aircraft != nil {
 		s.updateSimulationFields([]*Aircraft{aircraft})

@@ -1,17 +1,17 @@
 class MapManager {
-    
+
     // Initialize tracks mini-map
     initTracksMiniMap(containerId, retryCount = 0) {
         // Clean up any existing mini-map first
         this.cleanupTracksMiniMap();
-        
+
         setTimeout(() => {
             const container = document.getElementById(containerId);
             if (!container) {
                 console.warn('Mini-map container not found:', containerId);
                 return;
             }
-            
+
             // Ensure container is visible and has dimensions
             if (container.offsetWidth === 0 || container.offsetHeight === 0) {
                 if (retryCount < 5) { // Limit retries to prevent infinite loops
@@ -22,7 +22,7 @@ class MapManager {
                 }
                 return;
             }
-            
+
             try {
                 // Create mini-map instance
                 this.tracksMiniMap = L.map(containerId, {
@@ -34,14 +34,14 @@ class MapManager {
                     boxZoom: true,
                     keyboard: true
                 });
-                
+
                 // Add dark tile layer (same as main map)
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                     maxZoom: 18,
                     opacity: 1.0,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 }).addTo(this.tracksMiniMap);
-                
+
                 // Force map to recognize its container size
                 setTimeout(() => {
                     if (this.tracksMiniMap) {
@@ -53,7 +53,7 @@ class MapManager {
                 this.tracksMiniMap = null;
                 return;
             }
-            
+
             // Set initial view
             const store = Alpine.store('atc');
             if (store.selectedAircraft && store.selectedAircraft.adsb) {
@@ -63,43 +63,43 @@ class MapManager {
                 ], 12);
             } else {
                 // Default view
-                this.tracksMiniMap.setView([43.6777, -79.6248], 10);
+                this.tracksMiniMap.setView([37.4611, -122.1151], 10);
             }
-            
+
             // Initialize layers for tracks
             this.tracksMiniMapLayers = {
                 historical: L.layerGroup().addTo(this.tracksMiniMap),
                 future: L.layerGroup().addTo(this.tracksMiniMap),
                 current: L.layerGroup().addTo(this.tracksMiniMap)
             };
-            
+
             // Update tracks when data changes
             this.updateTracksMiniMap();
         }, 500);
     }
-    
+
     // Update tracks mini-map with current data
     updateTracksMiniMap() {
         if (!this.tracksMiniMap || !this.tracksMiniMapLayers) return;
-        
+
         const store = Alpine.store('atc');
         if (!store.aircraftDetailsShowHistoryView) return;
-        
+
         // Check if map container still exists
         if (!this.tracksMiniMap.getContainer() || !document.body.contains(this.tracksMiniMap.getContainer())) {
             this.tracksMiniMap = null;
             this.tracksMiniMapLayers = null;
             return;
         }
-        
+
         // Clear existing layers
         this.tracksMiniMapLayers.historical.clearLayers();
         this.tracksMiniMapLayers.future.clearLayers();
         this.tracksMiniMapLayers.current.clearLayers();
-        
+
         const aircraft = store.selectedAircraft;
         if (!aircraft) return;
-        
+
         // Add current position (or last known position if signal lost)
         if (aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
             const isSignalLost = aircraft.status === 'signal_lost';
@@ -112,14 +112,14 @@ class MapManager {
                 fillOpacity: 0.8
             }).addTo(this.tracksMiniMapLayers.current);
         }
-        
+
         // Add historical track
         const historyData = store.aircraftDetailsHistoryData || [];
         if (historyData.length > 0) {
             const historyPoints = historyData
                 .filter(pos => pos.lat && pos.lon)
                 .map(pos => [pos.lat, pos.lon]);
-            
+
             if (historyPoints.length > 1) {
                 L.polyline(historyPoints, {
                     color: '#888888',
@@ -128,7 +128,7 @@ class MapManager {
                     dashArray: '3, 3'
                 }).addTo(this.tracksMiniMapLayers.historical);
             }
-            
+
             // Add markers for historical points
             historyPoints.forEach(point => {
                 L.circleMarker(point, {
@@ -141,14 +141,14 @@ class MapManager {
                 }).addTo(this.tracksMiniMapLayers.historical);
             });
         }
-        
+
         // Add future predictions
         const futureData = store.aircraftDetailsFutureData || [];
         if (futureData.length > 0) {
             const futurePoints = futureData
                 .filter(pos => pos.lat && pos.lon)
                 .map(pos => [pos.lat, pos.lon]);
-            
+
             if (futurePoints.length > 1) {
                 L.polyline(futurePoints, {
                     color: '#FFC107',
@@ -157,7 +157,7 @@ class MapManager {
                     dashArray: '10, 5'
                 }).addTo(this.tracksMiniMapLayers.future);
             }
-            
+
             // Add markers for future points
             futurePoints.forEach(point => {
                 L.circleMarker(point, {
@@ -170,7 +170,7 @@ class MapManager {
                 }).addTo(this.tracksMiniMapLayers.future);
             });
         }
-        
+
         // Fit map to show all points
         const allPoints = [];
         if (aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
@@ -182,7 +182,7 @@ class MapManager {
         futureData.forEach(pos => {
             if (pos.lat && pos.lon) allPoints.push([pos.lat, pos.lon]);
         });
-        
+
         if (allPoints.length > 0) {
             try {
                 if (allPoints.length === 1) {
@@ -199,7 +199,7 @@ class MapManager {
             }
         }
     }
-    
+
     // Clean up tracks mini-map
     cleanupTracksMiniMap() {
         if (this.tracksMiniMap) {
@@ -232,7 +232,7 @@ class MapManager {
         this.proximityHexSet = null; // Set of aircraft hex codes in proximity
         this.proximityRefHex = null; // Reference aircraft hex for proximity
         this.proximityDistanceNM = null; // Distance in NM for proximity circle
-        
+
         // Runway rendering state
         this.runwayData = null;
         this.runwayZoomListener = null;
@@ -243,9 +243,9 @@ class MapManager {
         // This function is now primarily guarded by the `if (!this.map)` check in the store's init().
         const mapContainer = document.getElementById('map');
         if (mapContainer && mapContainer._leaflet_id) {
-             console.warn("MapManager.initMap called, but map container already has _leaflet_id. Current map instance:", this.map);
-             if (!this.map) throw new Error("Map container already initialized by Leaflet, but MapManager's 'map' is null.");
-             return; 
+            console.warn("MapManager.initMap called, but map container already has _leaflet_id. Current map instance:", this.map);
+            if (!this.map) throw new Error("Map container already initialized by Leaflet, but MapManager's 'map' is null.");
+            return;
         }
         if (this.map) {
             console.warn("MapManager.initMap called, but 'this.map' variable is already set. Not re-initializing.");
@@ -253,17 +253,17 @@ class MapManager {
         }
 
         console.log("MapManager: Initializing Leaflet map on #map element...");
-        
+
         // Determine the center coordinates - use override if active, otherwise station coordinates
         const centerLat = this.store.stationOverride.active
-            ? (this.store.stationOverride.latitude || this.store.stationLatitude || 43.6777)
-            : (this.store.stationLatitude || 43.6777);
+            ? (this.store.stationOverride.latitude || this.store.stationLatitude || (this.CONFIG.defaultCenter ? this.CONFIG.defaultCenter[0] : 37.4611))
+            : (this.store.stationLatitude || (this.CONFIG.defaultCenter ? this.CONFIG.defaultCenter[0] : 37.4611));
         const centerLon = this.store.stationOverride.active
-            ? (this.store.stationOverride.longitude || this.store.stationLongitude || -79.6248)
-            : (this.store.stationLongitude || -79.6248);
-            
+            ? (this.store.stationOverride.longitude || this.store.stationLongitude || (this.CONFIG.defaultCenter ? this.CONFIG.defaultCenter[1] : -122.1151))
+            : (this.store.stationLongitude || (this.CONFIG.defaultCenter ? this.CONFIG.defaultCenter[1] : -122.1151));
+
         console.log(`MapManager: Centering map on station coordinates: ${centerLat}, ${centerLon}`);
-        
+
         this.map = this.L.map('map', {
             center: [centerLat, centerLon],
             zoom: this.CONFIG.defaultZoom,
@@ -271,7 +271,7 @@ class MapManager {
             attributionControl: false,
             keyboard: false  // Disable Leaflet's default keyboard navigation to prevent conflicts with custom hotkeys
         });
-        
+
         // Add event listeners for viewport changes to update visible aircraft list
         this.map.on('moveend zoomend', () => {
             this.updateVisibleAircraftList();
@@ -286,18 +286,18 @@ class MapManager {
         this.layers.aircraft.addTo(this.map);
         this.layers.trails.addTo(this.map);
         this.layers.runways.addTo(this.map); // Add the runways layer
-        
+
         // Only add range rings layer and rings if the setting is enabled
         if (this.store.settings.showRings) {
             this.layers.rangeRings.addTo(this.map);
             this.addRangeRings();
         }
-        
+
         this.map.on('click', (e) => {
             const isMapClick = e.originalEvent.target.classList.contains('leaflet-container') ||
-                              e.originalEvent.target.classList.contains('leaflet-tile') ||
-                              e.originalEvent.target.classList.contains('leaflet-pane');
-            
+                e.originalEvent.target.classList.contains('leaflet-tile') ||
+                e.originalEvent.target.classList.contains('leaflet-pane');
+
             if (isMapClick) {
                 // Check if we're in station override map click mode
                 if (this.store.stationOverride.mapClickMode) {
@@ -305,14 +305,14 @@ class MapManager {
                     this.store.stationOverride.latitude = e.latlng.lat;
                     this.store.stationOverride.longitude = e.latlng.lng;
                     this.store.stationOverride.mapClickMode = false;
-                    
+
                     // Remove click indicator
                     this.store.hideMapClickIndicator();
-                    
+
                     console.log('Station coordinates set from map:', e.latlng);
                     return; // Don't process other click actions
                 }
-                
+
                 // Existing click behavior - deselect aircraft
                 if (this.store.selectedAircraft) {
                     this.store.selectedAircraft = null;
@@ -323,9 +323,9 @@ class MapManager {
 
         this.map.on('dblclick', (e) => {
             const isMapClick = e.originalEvent.target.classList.contains('leaflet-container') ||
-                              e.originalEvent.target.classList.contains('leaflet-tile') ||
-                              e.originalEvent.target.classList.contains('leaflet-pane');
-            
+                e.originalEvent.target.classList.contains('leaflet-tile') ||
+                e.originalEvent.target.classList.contains('leaflet-pane');
+
             if (isMapClick && this.store.searchTerm) {
                 this.store.searchTerm = '';
                 this.store.applyFilters();
@@ -339,7 +339,7 @@ class MapManager {
             console.warn('MapManager: Cannot add range rings - map not initialized yet');
             return;
         }
-        
+
         this.layers.rangeRings.clearLayers();
         // Use override coordinates if active, otherwise use station coordinates from API
         const centerLatLng = this.store.stationOverride.active
@@ -375,14 +375,14 @@ class MapManager {
     // Method to center map on current station coordinates
     centerOnStation() {
         if (!this.map) return;
-        
+
         const centerLat = this.store.stationOverride.active
-            ? (this.store.stationOverride.latitude || this.store.stationLatitude || 43.6777)
-            : (this.store.stationLatitude || 43.6777);
+            ? (this.store.stationOverride.latitude || this.store.stationLatitude || 37.4611)
+            : (this.store.stationLatitude || 37.4611);
         const centerLon = this.store.stationOverride.active
-            ? (this.store.stationOverride.longitude || this.store.stationLongitude || -79.6248)
-            : (this.store.stationLongitude || -79.6248);
-            
+            ? (this.store.stationOverride.longitude || this.store.stationLongitude || -122.1151)
+            : (this.store.stationLongitude || -122.1151);
+
         console.log(`MapManager: Centering map on station coordinates: ${centerLat}, ${centerLon}`);
         this.map.setView([centerLat, centerLon], this.CONFIG.defaultZoom);
     }
@@ -406,17 +406,17 @@ class MapManager {
         for (let minutes = 1; minutes <= 5; minutes++) {
             // Calculate distance traveled in degrees
             const distanceDegrees = speedDegreesPerMinute * minutes;
-            
+
             // Convert track to radians
             const trackRadians = (track * Math.PI) / 180;
-            
+
             // Calculate new position
             const deltaLat = distanceDegrees * Math.cos(trackRadians);
             const deltaLon = distanceDegrees * Math.sin(trackRadians) / Math.cos((currentLat * Math.PI) / 180);
-            
+
             const futureLat = currentLat + deltaLat;
             const futureLon = currentLon + deltaLon;
-            
+
             futurePoints.push([futureLat, futureLon]);
         }
 
@@ -456,10 +456,10 @@ class MapManager {
         if (!this.markers[aircraft.hex]) {
             // SAFETY CHECK: Ensure no existing markers are on the map for this aircraft
             this.forceCleanupAircraft(aircraft.hex);
-            
+
             const marker = this.L.marker(position, { icon: icon, riseOnHover: true });
             const label = this.L.marker(position, { icon: labelContentIcon, interactive: true });
-            
+
             // Store last position, heading, label content, and altitude for change detection
             this.markers[aircraft.hex] = {
                 aircraft: marker,
@@ -471,7 +471,7 @@ class MapManager {
                 lastAltitude: aircraft.adsb ? aircraft.adsb.alt_baro : 0,
                 created: Date.now() // Track creation time for debugging
             };
-            
+
             // PERFORMANCE FIX: Apply initial CSS rotation instead of generating rotated SVG
             setTimeout(() => {
                 const markerElement = marker.getElement();
@@ -484,7 +484,7 @@ class MapManager {
                     }
                 }
             }, 0);
-            
+
             marker.on('mouseover', () => {
                 Alpine.store('atc').hoveredAircraft = aircraft;
                 this.updateVisualState(aircraft.hex, true);
@@ -513,26 +513,26 @@ class MapManager {
                 Alpine.store('atc').sendFilterUpdate();
                 this.updateVisualState(aircraft.hex, true);
             });
-            
+
             //console.log(`[MAP] Created new markers for ${aircraft.hex}`);
         } else {
             // UPDATE EXISTING MARKER WITH COMPREHENSIVE CHANGE DETECTION
             const existing = this.markers[aircraft.hex];
-            
+
             // Only update position if moved more than ~25 meters (0.0002 degrees ≈ 25m)
-            const positionChanged = Math.abs(existing.lastLat - position[0]) > 0.0002 || 
-                                   Math.abs(existing.lastLon - position[1]) > 0.0002;
-            
+            const positionChanged = Math.abs(existing.lastLat - position[0]) > 0.0002 ||
+                Math.abs(existing.lastLon - position[1]) > 0.0002;
+
             if (positionChanged) {
                 existing.aircraft.setLatLng(position);
                 existing.label.setLatLng(position); // Fixed: Remove offset causing overlapping labels
                 existing.lastLat = position[0];
                 existing.lastLon = position[1];
             }
-            
+
             // PERFORMANCE FIX: Use CSS rotation instead of expensive setIcon() calls
             const headingChanged = Math.abs((existing.lastHeading || 0) - heading) > 5;
-            
+
             if (headingChanged) {
                 // Apply CSS rotation directly to marker element instead of regenerating icon
                 const markerElement = existing.aircraft.getElement();
@@ -545,11 +545,11 @@ class MapManager {
                 }
                 existing.lastHeading = heading;
             }
-            
+
             // Check for altitude changes (more sensitive detection)
             const currentAltitude = aircraft.adsb ? aircraft.adsb.alt_baro : 0;
             const altitudeChanged = Math.abs((existing.lastAltitude || 0) - currentAltitude) > 50; // 50 ft threshold
-            
+
             // Update label if content changed OR altitude changed significantly
             if (!existing.lastLabelContent || existing.lastLabelContent !== newLabelContent || altitudeChanged) {
                 existing.label.setIcon(labelContentIcon);
@@ -608,31 +608,31 @@ class MapManager {
 
         // Track which trails need updates
         const updatedTrails = new Set();
-        
+
         Object.keys(this.store.aircraft).forEach(hex => {
             const aircraftData = this.store.aircraft[hex];
             if (!aircraftData) return;
 
             // Filter by air/ground state - both can be enabled/disabled independently
             const isVisibleByGroundState = (aircraftData.on_ground && this.store.settings.showGroundAircraft) ||
-                                          (!aircraftData.on_ground && this.store.settings.showAirAircraft);
-            
+                (!aircraftData.on_ground && this.store.settings.showAirAircraft);
+
             // Only apply altitude filter to aircraft in the air
             const isVisibleByAltitude = aircraftData.on_ground ||
                 (aircraftData.adsb && aircraftData.adsb.alt_baro >= this.store.settings.minAltitude &&
-                aircraftData.adsb.alt_baro <= this.store.settings.maxAltitude);
-            
+                    aircraftData.adsb.alt_baro <= this.store.settings.maxAltitude);
+
             // Filter by flight phase - matching the table logic in app.js
             const currentPhase = this.getCurrentPhase(aircraftData);
-            
+
             const isVisibleByPhase = !(this.store.settings.phaseFilters && this.store.settings.phaseFilters[currentPhase] === false);
-            
+
             // Check if this aircraft is currently selected
             const isSelectedAircraft = this.store.selectedAircraft && this.store.selectedAircraft.hex === hex;
-            
+
             // Determine if trail should be visible
             const shouldShowTrail = (isVisibleByGroundState && isVisibleByAltitude && isVisibleByPhase) || isSelectedAircraft;
-            
+
             // If aircraft doesn't match filters and isn't selected, remove its trail
             if (!shouldShowTrail) {
                 this.layers.trails.eachLayer(layer => {
@@ -645,40 +645,40 @@ class MapManager {
 
             const trail = this.trails[hex];
             if (!trail || trail.length < 2) return;
-            
+
             // Only update trail if aircraft position changed significantly or if not yet updated
             const lastTrailPoint = trail[trail.length - 1];
             const currentPos = [aircraftData.adsb.lat, aircraftData.adsb.lon];
-            
+
             // Check if position changed enough to warrant trail update
-            const positionChanged = !lastTrailPoint || 
+            const positionChanged = !lastTrailPoint ||
                 Math.abs(lastTrailPoint.lat - currentPos[0]) > 0.0001 ||
                 Math.abs(lastTrailPoint.lon - currentPos[1]) > 0.0001;
-                
+
             if (!positionChanged && updatedTrails.has(hex)) return;
-            
+
             // Remove old trail for this aircraft only
             this.layers.trails.eachLayer(layer => {
                 if (layer.options.aircraftHex === hex) {
                     this.layers.trails.removeLayer(layer);
                 }
             });
-            
+
             let currentOpacity = 0.7;
 
             if (this.store.selectedAircraft && !isSelectedAircraft) {
-                currentOpacity = this.CONFIG.selectedFadeOpacity;      
+                currentOpacity = this.CONFIG.selectedFadeOpacity;
             } else if (isSelectedAircraft) {
                 currentOpacity = 0.7;
             }
 
             const currentPoints = [];
-            
+
             trail.forEach(point => {
                 const latLng = [point.lat, point.lon];
                 currentPoints.push(latLng);
             });
-            
+
             if (currentPoints.length >= 2) {
                 const polyline = this.L.polyline(currentPoints, {
                     className: 'stroke-2 fill-none',
@@ -693,14 +693,14 @@ class MapManager {
             if (isSelectedAircraft) {
                 console.log(`Selected aircraft ${hex}, status: ${aircraftData.status}, historyData length: ${this.store.aircraftDetailsHistoryData ? this.store.aircraftDetailsHistoryData.length : 'undefined'}`);
             }
-            
+
             if (isSelectedAircraft && this.store && this.store.aircraftDetailsHistoryData && this.store.aircraftDetailsHistoryData.length > 0) {
                 // Filter valid positions and limit to max 100 points while maintaining time range
                 const validPositions = this.store.aircraftDetailsHistoryData.filter(position => position.lat && position.lon);
-                
+
                 let historyPoints;
                 const maxHistoryPoints = 50;
-                
+
                 if (validPositions.length <= maxHistoryPoints) {
                     // Use all points if we have 100 or fewer
                     historyPoints = validPositions.map(position => [position.lat, position.lon]);
@@ -708,11 +708,11 @@ class MapManager {
                     // Subsample to maintain time range with max 100 points
                     const step = Math.floor(validPositions.length / maxHistoryPoints);
                     historyPoints = [];
-                    
+
                     for (let i = 0; i < validPositions.length; i += step) {
                         historyPoints.push([validPositions[i].lat, validPositions[i].lon]);
                     }
-                    
+
                     // Always include the last point to maintain complete time range
                     const lastPosition = validPositions[validPositions.length - 1];
                     const lastPoint = [lastPosition.lat, lastPosition.lon];
@@ -722,9 +722,9 @@ class MapManager {
                         historyPoints.push(lastPoint);
                     }
                 }
-                
+
                 console.log(`History trail for ${hex}: ${historyPoints.length} points (from ${validPositions.length} total), aircraft status: ${aircraftData.status}`);
-                
+
                 // Create the main history trail polyline only if we have at least 2 points
                 if (historyPoints.length >= 2) {
                     const historyPolyline = this.L.polyline(historyPoints, {
@@ -739,27 +739,27 @@ class MapManager {
                     });
                     historyPolyline.addTo(this.layers.trails);
                 }
-                
+
                 // Add markers at key points (balanced performance vs visibility)
                 const pointsToShow = this.store.aircraftDetailsHistoryData.length <= 8 ?
                     this.store.aircraftDetailsHistoryData :
                     this.store.aircraftDetailsHistoryData.filter((_, i) =>
                         i === 0 || i === this.store.aircraftDetailsHistoryData.length - 1 || i % Math.ceil(this.store.aircraftDetailsHistoryData.length / 8) === 0
                     );
-                
+
                 pointsToShow.forEach((position, index) => {
                     const posLatLng = [position.lat, position.lon];
-                    
+
                     // Format altitude for display
                     const altitude = position.altitude !== undefined ? position.altitude : 'N/A';
                     const altText = altitude === 0 ? 'GND' :
-                                   altitude !== 'N/A' ? Math.round(altitude/100)*100 : 'N/A';
-                    
+                        altitude !== 'N/A' ? Math.round(altitude / 100) * 100 : 'N/A';
+
                     // Calculate time ago in minutes
                     const now = new Date();
                     const positionTime = new Date(position.timestamp);
                     const minutesAgo = Math.round((now - positionTime) / (1000 * 60));
-                    
+
                     // Create history marker in grey color without tooltip
                     const historyMarker = this.L.circleMarker(posLatLng, {
                         radius: 3,
@@ -773,7 +773,7 @@ class MapManager {
                         aircraftHex: hex
                     });
                     historyMarker.addTo(this.layers.trails);
-                    
+
                     // Add time and altitude label next to the marker in grey
                     const historyLabel = this.L.marker(posLatLng, {
                         icon: this.L.divIcon({
@@ -786,12 +786,12 @@ class MapManager {
                     });
                     historyLabel.addTo(this.layers.trails);
                 });
-                
+
                 // Add a special marker for the most recent position
                 if (this.store.aircraftDetailsHistoryData.length > 0) {
                     const lastPos = this.store.aircraftDetailsHistoryData[this.store.aircraftDetailsHistoryData.length - 1];
                     const lastPosLatLng = [lastPos.lat, lastPos.lon];
-                    
+
                     const lastHistoryMarker = this.L.circleMarker(lastPosLatLng, {
                         radius: 4,
                         color: '#888888',
@@ -808,11 +808,11 @@ class MapManager {
 
             // Show future trajectories for all active aircraft (not signal_lost)
             const showFutureTrajectory = (isSelectedAircraft && this.store && this.store.aircraftDetailsFutureData && this.store.aircraftDetailsFutureData.length > 0) ||
-                                       (aircraftData.status === 'active' && aircraftData.adsb && aircraftData.adsb.gs > 5); // Only for moving active aircraft
-            
+                (aircraftData.status === 'active' && aircraftData.adsb && aircraftData.adsb.gs > 5); // Only for moving active aircraft
+
             if (showFutureTrajectory) {
                 let futureDataPoints = [];
-                
+
                 if (isSelectedAircraft && this.store.aircraftDetailsFutureData) {
                     // Use detailed future data for selected aircraft
                     futureDataPoints = this.store.aircraftDetailsFutureData
@@ -822,14 +822,14 @@ class MapManager {
                     // Generate simple future trajectory for active aircraft based on current vector
                     futureDataPoints = this.generateFutureTrajectory(aircraftData);
                 }
-                
+
                 if (futureDataPoints.length > 0) {
                     // Create a polyline for the future trajectory that starts from the current aircraft position
                     const currentPosition = [aircraftData.adsb.lat, aircraftData.adsb.lon];
                     const futurePoints = [currentPosition, ...futureDataPoints];
-                    
+
                     //console.log(`Future trail for ${hex}: ${futurePoints.length} points, aircraft status: ${aircraftData.status}`);
-                    
+
                     // Create the main future trajectory polyline only if we have at least 2 points
                     if (futurePoints.length >= 2) {
                         const futurePolyline = this.L.polyline(futurePoints, {
@@ -844,21 +844,21 @@ class MapManager {
                         });
                         futurePolyline.addTo(this.layers.trails);
                     }
-                    
+
                     // Only add detailed markers for selected aircraft to avoid clutter
                     if (isSelectedAircraft && this.store.aircraftDetailsFutureData) {
                         // Add markers at each future position
                         this.store.aircraftDetailsFutureData.forEach((position, index) => {
                             const posLatLng = [position.lat, position.lon];
-                            
+
                             // Format altitude for display
                             const altitude = position.altitude !== undefined ? position.altitude : 'N/A';
                             const minutesAhead = index + 1;
-                            
+
                             // Create future position marker with altitude label
                             const altText = altitude === 0 ? 'GND' :
-                                           altitude !== 'N/A' ? Math.round(altitude/100)*100 : 'N/A';
-                            
+                                altitude !== 'N/A' ? Math.round(altitude / 100) * 100 : 'N/A';
+
                             const futureMarker = this.L.circleMarker(posLatLng, {
                                 radius: 3,
                                 color: '#888888',
@@ -871,7 +871,7 @@ class MapManager {
                                 aircraftHex: hex
                             });
                             futureMarker.addTo(this.layers.trails);
-                            
+
                             // Add altitude label next to the future marker in grey
                             const futureLabel = this.L.marker(posLatLng, {
                                 icon: this.L.divIcon({
@@ -884,12 +884,12 @@ class MapManager {
                             });
                             futureLabel.addTo(this.layers.trails);
                         });
-                        
+
                         // Add a special marker for the last future position
                         if (this.store.aircraftDetailsFutureData.length > 0) {
                             const lastPos = this.store.aircraftDetailsFutureData[this.store.aircraftDetailsFutureData.length - 1];
                             const lastPosLatLng = [lastPos.lat, lastPos.lon];
-                            
+
                             const lastFutureMarker = this.L.circleMarker(lastPosLatLng, {
                                 radius: 4,
                                 color: '#888888',
@@ -905,7 +905,7 @@ class MapManager {
                     }
                 }
             }
-            
+
             updatedTrails.add(hex);
         });
     }
@@ -928,7 +928,7 @@ class MapManager {
 
         // Check if this aircraft is in proximity view
         const isInProximity = this.proximityHexSet && this.proximityHexSet.has(hex);
-        
+
         // Only apply green highlighting to the selected aircraft, never to proximity aircraft
         const isActuallySelected = Alpine.store('atc').selectedAircraft && Alpine.store('atc').selectedAircraft.hex === hex && !isInProximity;
         const isHovered = Alpine.store('atc').hoveredAircraft?.hex === hex && !isInProximity;
@@ -958,11 +958,11 @@ class MapManager {
             return true;
         };
         this._updateElementStyle(markers.aircraft.getElement(), {}, {}, checkAircraftIcon, forceImmediate);
-        
+
         const checkLabelStyle = (apply = false) => {
             const element = markers.label.getElement();
             const labelDiv = element?.querySelector('div') || element;
-            
+
             if (labelDiv) {
                 if (apply) {
                     if (this.proximityHexSet && this.proximityHexSet.has(hex)) {
@@ -980,7 +980,7 @@ class MapManager {
                         // Apply inline CSS for reliable visual effect
                         labelDiv.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
                         labelDiv.style.borderColor = 'rgba(76, 175, 80, 0.3)';
-                        
+
                         // Also apply hover effect to corresponding flight card in table
                         this._updateFlightCardHover(hex, true);
                     } else {
@@ -989,7 +989,7 @@ class MapManager {
                         // Remove inline styles
                         labelDiv.style.backgroundColor = '';
                         labelDiv.style.borderColor = '';
-                        
+
                         // Also remove hover effect from corresponding flight card in table
                         this._updateFlightCardHover(hex, false);
                     }
@@ -1002,18 +1002,18 @@ class MapManager {
             return true; // No element found, no changes needed
         };
         this._updateElementStyle(markers.label.getElement(), {}, {}, checkLabelStyle, forceImmediate);
-        
+
         markers.aircraft.setOpacity(targetOpacity);
         if (markers.label && markers.label.setOpacity) {
             markers.label.setOpacity(targetOpacity);
         }
     }
-    
+
     _updateElementStyle(element, highlightedStyle, normalStyle, checkFn, forceImmediate) {
         // Simplified style updater based on the original logic
         if (checkFn()) return true;
         if (forceImmediate) {
-             if (checkFn(true)) return true;
+            if (checkFn(true)) return true;
         }
         // Remove delay for instant hover response
         checkFn(true);
@@ -1041,11 +1041,11 @@ class MapManager {
 
     updateMapMarkerAndLabelVisibility() {
         const searchLower = this.store.searchTerm.toLowerCase();
-        
+
         // Get current map bounds for viewport culling
         const mapBounds = this.map ? this.map.getBounds() : null;
         const currentZoom = this.map ? this.map.getZoom() : 10;
-        
+
         // Enable viewport culling when zoomed in (zoom level > 11)
         const useViewportCulling = currentZoom > 11 && mapBounds;
 
@@ -1058,36 +1058,36 @@ class MapManager {
             const callsign = (aircraft.flight || aircraft.hex).toLowerCase();
             const type = (aircraft.adsb?.type || '').toLowerCase();
             const category = (aircraft.adsb?.category || '').toLowerCase();
-            
+
             const matchesSearch = searchLower === '' ||
-                                callsign.includes(searchLower) ||
-                                type.includes(searchLower) ||
-                                category.includes(searchLower);
-            
+                callsign.includes(searchLower) ||
+                type.includes(searchLower) ||
+                category.includes(searchLower);
+
             // Filter by air/ground state - both can be enabled/disabled independently
             const isVisibleByGroundState = (aircraft.on_ground && this.store.settings.showGroundAircraft) ||
-                                          (!aircraft.on_ground && this.store.settings.showAirAircraft);
-            
+                (!aircraft.on_ground && this.store.settings.showAirAircraft);
+
             // Only apply altitude filter to aircraft in the air
             const isVisibleByAltitude = aircraft.on_ground ||
                 (aircraft.adsb && aircraft.adsb.alt_baro >= this.store.settings.minAltitude &&
-                aircraft.adsb.alt_baro <= this.store.settings.maxAltitude);
-            
+                    aircraft.adsb.alt_baro <= this.store.settings.maxAltitude);
+
             // Filter by flight phase - matching the table logic in app.js
             const currentPhase = this.getCurrentPhase(aircraft);
-            
+
             const isVisibleByPhase = !(this.store.settings.phaseFilters && this.store.settings.phaseFilters[currentPhase] === false);
-            
+
             // Check if this aircraft is currently selected
             const isSelectedAircraft = this.store.selectedAircraft && this.store.selectedAircraft.hex === aircraft.hex;
-            
+
             // Check if aircraft is in viewport (when viewport culling is enabled)
             let isInViewport = true;
             if (useViewportCulling && aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
                 const position = L.latLng(aircraft.adsb.lat, aircraft.adsb.lon);
                 isInViewport = mapBounds.contains(position);
             }
-            
+
             // Aircraft should be visible if it matches filters AND is in viewport OR if it's selected
             const shouldBeVisibleOnMap = ((matchesSearch && isVisibleByGroundState && isVisibleByAltitude && isVisibleByPhase && isInViewport) || isSelectedAircraft);
 
@@ -1096,7 +1096,7 @@ class MapManager {
 
             if (shouldBeVisibleOnMap && !markerIsOnMap) {
                 markerInfo.aircraft.addTo(this.layers.aircraft);
-                
+
                 // CRITICAL FIX: Apply heading rotation when aircraft becomes visible again
                 const heading = this.store.getHeadingWithFallback(aircraft);
                 setTimeout(() => {
@@ -1123,9 +1123,9 @@ class MapManager {
                     this.layers.aircraft.removeLayer(markerInfo.label);
                 }
             }
-            
+
             if (shouldBeVisibleOnMap) {
-                 this.updateVisualState(hex);
+                this.updateVisualState(hex);
             }
         });
     }
@@ -1148,23 +1148,23 @@ class MapManager {
     // Efficient single aircraft update for WebSocket performance
     updateSingleAircraft(hex, aircraft) {
         if (!aircraft) return;
-        
+
         // Ensure leaflet objects exist
         this._ensureLeafletObjects(aircraft);
-        
+
         // Update marker position and visual state
         const markerInfo = this.markers[hex];
         if (!markerInfo) return;
-        
+
         // Update marker position if it exists
         if (aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
             const newPos = [aircraft.adsb.lat, aircraft.adsb.lon];
             markerInfo.aircraft.setLatLng(newPos);
         }
-        
+
         // Update visual state (color, rotation, etc.)
         this.updateVisualState(hex);
-        
+
         // Update label content with latest data
         if (markerInfo.label && this.store.settings.showLabels) {
             const callsign = aircraft.flight || aircraft.hex;
@@ -1173,49 +1173,49 @@ class MapManager {
             const labelContent = this.store.createLabelContent(aircraft, callsign, altitude, verticalTrend);
             markerInfo.label.setTooltipContent(labelContent);
         }
-        
+
         // Check visibility for this specific aircraft
         this.updateSingleAircraftVisibility(hex, aircraft);
     }
-    
+
     // Update visibility for a single aircraft (performance optimized)
     updateSingleAircraftVisibility(hex, aircraft) {
         const markerInfo = this.markers[hex];
         if (!markerInfo) return;
-        
+
         const searchLower = this.store.searchTerm.toLowerCase();
         const callsign = (aircraft.flight || aircraft.hex).toLowerCase();
         const type = (aircraft.adsb?.type || '').toLowerCase();
         const category = (aircraft.adsb?.category || '').toLowerCase();
-        
+
         const matchesSearch = searchLower === '' ||
-                            callsign.includes(searchLower) ||
-                            type.includes(searchLower) ||
-                            category.includes(searchLower);
-        
+            callsign.includes(searchLower) ||
+            type.includes(searchLower) ||
+            category.includes(searchLower);
+
         const isVisibleByGroundState = (aircraft.on_ground && this.store.settings.showGroundAircraft) ||
-                                      (!aircraft.on_ground && this.store.settings.showAirAircraft);
-        
+            (!aircraft.on_ground && this.store.settings.showAirAircraft);
+
         const isVisibleByAltitude = aircraft.on_ground ||
             (aircraft.adsb && aircraft.adsb.alt_baro >= this.store.settings.minAltitude &&
-             aircraft.adsb.alt_baro <= this.store.settings.maxAltitude);
-        
+                aircraft.adsb.alt_baro <= this.store.settings.maxAltitude);
+
         const currentPhase = this.getCurrentPhase(aircraft);
         const isVisibleByPhase = !(this.store.settings.phaseFilters && this.store.settings.phaseFilters[currentPhase] === false);
-        
+
         const isSelectedAircraft = this.store.selectedAircraft && this.store.selectedAircraft.hex === aircraft.hex;
         const shouldBeVisibleOnMap = (matchesSearch && isVisibleByGroundState && isVisibleByAltitude && isVisibleByPhase) || isSelectedAircraft;
-        
+
         const markerIsOnMap = this.layers.aircraft.hasLayer(markerInfo.aircraft);
         const labelIsOnMap = markerInfo.label && this.layers.aircraft.hasLayer(markerInfo.label);
-        
+
         // Update marker visibility
         if (shouldBeVisibleOnMap && !markerIsOnMap) {
             markerInfo.aircraft.addTo(this.layers.aircraft);
         } else if (!shouldBeVisibleOnMap && markerIsOnMap) {
             this.layers.aircraft.removeLayer(markerInfo.aircraft);
         }
-        
+
         // Update label visibility
         const shouldLabelBeVisible = this.store.settings.showLabels && shouldBeVisibleOnMap;
         if (markerInfo.label) {
@@ -1232,34 +1232,34 @@ class MapManager {
         this.updateMapMarkerAndLabelVisibility();
         this.updateFlightPaths();
         this.updateVisibleAircraftList();
-        
+
         // Update proximity circle if active
         this.updateProximityCircle();
-        
+
         if (this.map) {
             this.map.invalidateSize(false); // Invalidate map size in case of layout changes
         }
     }
-    
+
     // Update list of aircraft visible on map for UI indicators
     updateVisibleAircraftList() {
         if (!this.map) return;
-        
+
         const mapBounds = this.map.getBounds();
         const currentZoom = this.map.getZoom();
         const useViewportCulling = currentZoom > 11 && mapBounds;
-        
+
         // Track which aircraft are currently visible on the map
         const visibleAircraftHexes = new Set();
-        
+
         Object.keys(this.store.aircraft).forEach(hex => {
             const aircraft = this.store.aircraft[hex];
             const markerInfo = this.markers[hex];
-            
+
             if (!markerInfo || !this.layers.aircraft.hasLayer(markerInfo.aircraft)) {
                 return; // Aircraft marker not on map
             }
-            
+
             // If viewport culling is enabled, check if aircraft is in bounds
             if (useViewportCulling && aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
                 const position = L.latLng(aircraft.adsb.lat, aircraft.adsb.lon);
@@ -1271,7 +1271,7 @@ class MapManager {
                 visibleAircraftHexes.add(hex);
             }
         });
-        
+
         // Update store with visible aircraft list
         this.store.visibleAircraftOnMap = visibleAircraftHexes;
     }
@@ -1311,12 +1311,12 @@ class MapManager {
     // Force cleanup of aircraft markers (prevents overlapping labels)
     forceCleanupAircraft(hex) {
         //console.log(`[MAP] Force cleanup for ${hex}`);
-        
+
         // Remove from our tracking
         if (this.markers[hex]) {
             this.removeAircraft(hex);
         }
-        
+
         // SAFETY: Scan all layers to remove any orphaned markers for this aircraft
         const layersToCheck = [this.layers.aircraft];
         layersToCheck.forEach(layer => {
@@ -1338,17 +1338,17 @@ class MapManager {
     drawProximityCircle(position, distanceNM) {
         // Remove any existing proximity circle
         this.removeProximityCircle();
-        
+
         // Convert nautical miles to meters
         const radiusMeters = distanceNM * 1852; // 1 NM = 1852 meters
-        
+
         // Store the reference aircraft hex and distance for updates
         this.proximityRefHex = this.store.selectedAircraft?.hex;
         this.proximityDistanceNM = distanceNM;
-        
+
         // Determine if there are aircraft in proximity (excluding the reference aircraft)
         const hasAircraftInProximity = this.proximityHexSet && this.proximityHexSet.size > 0;
-        
+
         // Create a new circle
         this.proximityCircle = this.L.circle(position, {
             radius: radiusMeters,
@@ -1361,12 +1361,12 @@ class MapManager {
             pane: 'overlayPane', // Use the overlay pane which is below markers
             interactive: false // Make sure the circle doesn't interfere with clicks
         }).addTo(this.map);
-        
+
         // Ensure the circle is below aircraft markers
         if (this.proximityCircle.getElement()) {
             this.proximityCircle.getElement().style.zIndex = '300'; // Even lower than before (300 vs 400)
         }
-        
+
         // Don't change the map view
     }
 
@@ -1379,7 +1379,7 @@ class MapManager {
         this.proximityRefHex = null;
         this.proximityDistanceNM = null;
     }
-    
+
     updateProximityCircle() {
         // If we have a proximity circle and reference aircraft
         if (this.proximityCircle && this.proximityRefHex && this.proximityDistanceNM) {
@@ -1387,7 +1387,7 @@ class MapManager {
             const aircraft = this.store.aircraft[this.proximityRefHex];
             if (aircraft && aircraft.adsb && aircraft.adsb.lat && aircraft.adsb.lon) {
                 const position = [aircraft.adsb.lat, aircraft.adsb.lon];
-                
+
                 // Update the circle position
                 this.proximityCircle.setLatLng(position);
             }
@@ -1397,10 +1397,10 @@ class MapManager {
     highlightProximityAircraft(proximityHexSet) {
         // Remove any existing highlighting first
         this.removeProximityHighlighting();
-        
+
         // Store the set for later use
         this.proximityHexSet = proximityHexSet;
-        
+
         // First, ensure ALL aircraft labels are on top of the circle
         Object.keys(this.markers).forEach(hex => {
             if (this.markers[hex].label) {
@@ -1409,7 +1409,7 @@ class MapManager {
                     labelElement.style.zIndex = '1000'; // Ensure all labels are on top of the circle
                 }
             }
-            
+
             // Also bring all aircraft markers to front
             if (this.markers[hex].aircraft) {
                 const markerElement = this.markers[hex].aircraft.getElement();
@@ -1418,7 +1418,7 @@ class MapManager {
                 }
             }
         });
-        
+
         // Then apply highlighting to the aircraft in proximity
         Object.keys(this.markers).forEach(hex => {
             if (proximityHexSet.has(hex) && this.markers[hex].label) {
@@ -1427,10 +1427,10 @@ class MapManager {
                     this.store.proximityHighlightedAircraft = new Set();
                 }
                 this.store.proximityHighlightedAircraft.add(hex);
-                
+
                 // Always apply proximity highlighting, even to selected/hovered aircraft
                 // This ensures proximity highlighting takes precedence
-                
+
                 const labelElement = this.markers[hex].label.getElement();
                 if (labelElement) {
                     const labelDiv = labelElement.querySelector('div');
@@ -1438,26 +1438,26 @@ class MapManager {
                         // Remove any existing classes that might affect the style
                         labelDiv.classList.remove('selected');
                         labelDiv.classList.remove('hovered');
-                        
+
                         // Add our custom proximity highlight class
                         labelDiv.classList.add('proximity-highlight');
-                        
+
                         // Set styles directly
                         labelDiv.style.opacity = '1'; // Full opacity
                         labelDiv.style.zIndex = '1500'; // Higher z-index
                         labelDiv.style.borderColor = ''; // Remove any border color to use the one from CSS
-                        
+
                         // Add hover event listeners
                         labelDiv.addEventListener('mouseenter', () => {
                             labelDiv.classList.add('proximity-highlight-hover');
                         });
-                        
+
                         labelDiv.addEventListener('mouseleave', () => {
                             labelDiv.classList.remove('proximity-highlight-hover');
                         });
                     }
                 }
-                
+
                 // Make the aircraft icon fully opaque and bring it to the very front
                 if (this.markers[hex].aircraft) {
                     const aircraftElement = this.markers[hex].aircraft.getElement();
@@ -1466,18 +1466,18 @@ class MapManager {
                         aircraftElement.style.zIndex = '1500'; // Higher z-index
                     }
                 }
-                
+
                 // We can't directly access trail elements as they're in a layer group
                 // Instead, we'll redraw the trails with higher opacity when in proximity view
             }
         });
-        
+
         // We no longer need to update the circle animation
     }
 
     removeProximityHighlighting() {
         if (!this.proximityHexSet) return;
-        
+
         // Remove highlighting from all aircraft labels
         Object.keys(this.markers).forEach(hex => {
             if (this.proximityHexSet.has(hex) && this.markers[hex].label) {
@@ -1485,10 +1485,10 @@ class MapManager {
                 if (this.store.proximityHighlightedAircraft) {
                     this.store.proximityHighlightedAircraft.delete(hex);
                 }
-                
+
                 // Check if this is the selected aircraft
                 const isSelectedAircraft = this.store.selectedAircraft && this.store.selectedAircraft.hex === hex;
-                
+
                 const labelElement = this.markers[hex].label.getElement();
                 if (labelElement) {
                     const labelDiv = labelElement.querySelector('div');
@@ -1496,22 +1496,22 @@ class MapManager {
                         // Remove proximity classes
                         labelDiv.classList.remove('proximity-highlight');
                         labelDiv.classList.remove('proximity-highlight-hover');
-                        
+
                         // Remove event listeners (clone and replace the element)
                         const newLabelDiv = labelDiv.cloneNode(true);
                         labelDiv.parentNode.replaceChild(newLabelDiv, labelDiv);
-                        
+
                         if (!isSelectedAircraft) {
                             // Only reset these styles for non-selected aircraft
                             // For selected aircraft, we want to keep the green highlighting
                             labelDiv.style.animation = ''; // Reset animation
-                            
+
                             // Now call updateVisualState to restore the proper state
                             this.updateVisualState(hex, true);
                         }
                     }
                 }
-                
+
                 // Reset aircraft icon z-index
                 if (this.markers[hex].aircraft) {
                     const aircraftElement = this.markers[hex].aircraft.getElement();
@@ -1519,21 +1519,21 @@ class MapManager {
                         aircraftElement.style.zIndex = '1000'; // Reset to normal z-index
                     }
                 }
-                
+
                 // We don't need to reset trail elements as they're managed by the layer group
             }
         });
-        
+
         // Clear the set
         this.proximityHexSet = null;
     }
-    
+
     updateProximityCircleAnimation(hasAircraftInProximity) {
         if (!this.proximityCircle || typeof this.proximityCircle.getElement !== 'function') return;
-        
+
         const circleElement = this.proximityCircle.getElement();
         if (!circleElement) return;
-        
+
         if (hasAircraftInProximity) {
             // Add pulsing animation class if there are aircraft in proximity
             circleElement.classList.add('proximity-circle-alert');
@@ -1552,7 +1552,7 @@ class MapManager {
             console.warn('MapManager: Cannot draw runways - map not initialized yet');
             return;
         }
-        
+
         if (!runwayData || !runwayData.runway_thresholds || !runwayData.runway_extensions) {
             console.warn("No runway data available");
             return;
@@ -1560,10 +1560,10 @@ class MapManager {
 
         // Store runway data for zoom-aware rendering
         this.runwayData = runwayData;
-        
+
         // Initial render
         this.updateRunwayDisplay();
-        
+
         // Add zoom event listener for dynamic detail adjustment (only once)
         if (!this.runwayZoomListener) {
             this.runwayZoomListener = () => {
@@ -1579,39 +1579,39 @@ class MapManager {
 
     updateRunwayDisplay() {
         if (!this.map || !this.runwayData) return;
-        
+
         // Clear existing runway layers
         this.layers.runways.clearLayers();
-        
+
         const currentZoom = this.map.getZoom();
         const showExtensions = currentZoom >= 11; // Only show extensions when zoomed in
         const showDistanceMarkers = currentZoom >= 13; // Only show distance markers when very zoomed in
-        
+
         // Draw each runway with zoom-appropriate detail level
         for (const runwayId in this.runwayData.runway_thresholds) {
             const thresholds = this.runwayData.runway_thresholds[runwayId];
             const extensions = this.runwayData.runway_extensions[runwayId];
-            
+
             // Get the two ends of the runway
             const ends = Object.keys(thresholds);
             if (ends.length !== 2) continue;
-            
+
             const end1 = ends[0];
             const end2 = ends[1];
-            
+
             // Always draw the runway itself (as a thick line)
             const runwayCoords = [
                 [thresholds[end1].latitude, thresholds[end1].longitude],
                 [thresholds[end2].latitude, thresholds[end2].longitude]
             ];
-            
+
             this.L.polyline(runwayCoords, {
                 color: '#FFFFFF',
                 weight: Math.max(4, Math.min(8, currentZoom - 6)), // Scale line weight with zoom
                 opacity: 0.8,
                 className: 'runway-line'
             }).addTo(this.layers.runways);
-            
+
             // Only show runway labels when zoomed in enough
             if (currentZoom >= 10) {
                 this.L.marker([thresholds[end1].latitude, thresholds[end1].longitude], {
@@ -1621,7 +1621,7 @@ class MapManager {
                         iconSize: [30, 20]
                     })
                 }).addTo(this.layers.runways);
-                
+
                 this.L.marker([thresholds[end2].latitude, thresholds[end2].longitude], {
                     icon: this.L.divIcon({
                         html: `<div class="runway-label">${end2}</div>`,
@@ -1630,7 +1630,7 @@ class MapManager {
                     })
                 }).addTo(this.layers.runways);
             }
-            
+
             // Only draw extensions when zoomed in enough
             if (showExtensions && extensions) {
                 // Draw extension for end1
@@ -1638,7 +1638,7 @@ class MapManager {
                     const extensionCoords = extensions[end1].map(point =>
                         [point.latitude, point.longitude]
                     );
-                    
+
                     this.L.polyline(extensionCoords, {
                         color: '#76C76C',
                         weight: 1.5,
@@ -1646,7 +1646,7 @@ class MapManager {
                         dashArray: '8, 12',
                         className: 'runway-extension-line'
                     }).addTo(this.layers.runways);
-                    
+
                     // Only add distance markers when very zoomed in
                     if (showDistanceMarkers) {
                         extensions[end1].forEach(point => {
@@ -1660,7 +1660,7 @@ class MapManager {
                                     weight: 1,
                                     className: 'runway-distance-marker'
                                 }).addTo(this.layers.runways);
-                                
+
                                 // Add distance label
                                 this.L.marker([point.latitude, point.longitude], {
                                     icon: this.L.divIcon({
@@ -1674,13 +1674,13 @@ class MapManager {
                         });
                     }
                 }
-                
+
                 // Draw extension for end2
                 if (extensions[end2] && extensions[end2].length > 0) {
                     const extensionCoords = extensions[end2].map(point =>
                         [point.latitude, point.longitude]
                     );
-                    
+
                     this.L.polyline(extensionCoords, {
                         color: '#76C76C',
                         weight: 1.5,
@@ -1688,7 +1688,7 @@ class MapManager {
                         dashArray: '8, 12',
                         className: 'runway-extension-line'
                     }).addTo(this.layers.runways);
-                    
+
                     // Only add distance markers when very zoomed in
                     if (showDistanceMarkers) {
                         extensions[end2].forEach(point => {
@@ -1702,7 +1702,7 @@ class MapManager {
                                     weight: 1,
                                     className: 'runway-distance-marker'
                                 }).addTo(this.layers.runways);
-                                
+
                                 // Add distance label
                                 this.L.marker([point.latitude, point.longitude], {
                                     icon: this.L.divIcon({
@@ -1727,24 +1727,24 @@ class MapManager {
             clearTimeout(this.runwayUpdateTimeout);
             this.runwayUpdateTimeout = null;
         }
-        
+
         // Remove zoom event listener
         if (this.map && this.runwayZoomListener) {
             this.map.off('zoomend', this.runwayZoomListener);
             this.runwayZoomListener = null;
         }
-        
+
         // Clear runway data
         this.runwayData = null;
     }
-    
+
     // Center the map on a specific aircraft
     centerOnAircraft(aircraft) {
         if (!aircraft || !aircraft.adsb || !aircraft.adsb.lat || !aircraft.adsb.lon) return;
-        
+
         // Get the aircraft position
         const position = [aircraft.adsb.lat, aircraft.adsb.lon];
-        
+
         // Center the map on the aircraft position
         this.map.setView(position, this.map.getZoom());
     }
@@ -1790,7 +1790,7 @@ class MapManager {
                     <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)}
                 </div>
             `;
-            
+
             this.positionHighlightMarker.bindPopup(popupContent, {
                 offset: [0, -10],
                 closeButton: false,
@@ -1831,17 +1831,17 @@ class MapManager {
         }
 
         const position = [aircraft.adsb.lat, aircraft.adsb.lon];
-        
+
         // Use the phase from the event data to determine color
         const color = this.getPhaseColor(phase);
-        
+
         console.log(`Shockwave animation for ${hex}: phase=${phase}, color=${color}`);
-        
+
         // Create multiple expanding circles for a pulse effect
         const pulseCount = 3;
         const maxRadius = 2000; // meters
         const animationDuration = 2000; // milliseconds
-        
+
         for (let i = 0; i < pulseCount; i++) {
             setTimeout(() => {
                 // Create an expanding circle
@@ -1854,20 +1854,20 @@ class MapManager {
                     opacity: 0.8,
                     className: 'takeoff-landing-pulse'
                 }).addTo(this.map);
-                
+
                 // Animate the circle expansion and fade
                 let startTime = Date.now();
                 const animate = () => {
                     const elapsed = Date.now() - startTime;
                     const progress = Math.min(elapsed / animationDuration, 1);
-                    
+
                     // Exponential easing for smooth animation
                     const easeOut = 1 - Math.pow(1 - progress, 3);
-                    
+
                     // Update radius
                     const currentRadius = maxRadius * easeOut;
                     circle.setRadius(currentRadius);
-                    
+
                     // Update opacity (fade out)
                     const opacity = 0.8 * (1 - progress);
                     const fillOpacity = 0.3 * (1 - progress);
@@ -1875,7 +1875,7 @@ class MapManager {
                         opacity: opacity,
                         fillOpacity: fillOpacity
                     });
-                    
+
                     if (progress < 1) {
                         requestAnimationFrame(animate);
                     } else {
@@ -1883,20 +1883,20 @@ class MapManager {
                         this.map.removeLayer(circle);
                     }
                 };
-                
+
                 requestAnimationFrame(animate);
             }, i * 300); // Stagger each pulse by 300ms
         }
-        
+
         // Also add a temporary highlight to the aircraft marker
         if (this.markers[hex]) {
             const marker = this.markers[hex].aircraft;
             const label = this.markers[hex].label;
-            
+
             // Store original classes
             const originalMarkerClass = marker._icon ? marker._icon.className : '';
             const originalLabelClass = label._icon ? label._icon.className : '';
-            
+
             // Add highlight class
             if (marker._icon) {
                 marker._icon.classList.add('takeoff-landing-highlight');
@@ -1904,7 +1904,7 @@ class MapManager {
             if (label._icon) {
                 label._icon.classList.add('takeoff-landing-label-highlight');
             }
-            
+
             // Remove highlight after animation
             setTimeout(() => {
                 if (marker._icon) {

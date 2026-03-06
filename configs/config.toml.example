@@ -91,15 +91,15 @@ max_positions_in_api = 50
 #######################################################
 [station]
 # Geographic coordinates of your monitoring station (decimal degrees)
-# Example: Toronto Pearson International Airport (CYYZ)
-latitude = 43.6777
-longitude = -79.6248
+# Example: Palo Alto Airport (KPAO)
+latitude = 37.4611
+longitude = -122.1151
 
 # Elevation of your station above sea level (in feet)
-elevation_feet = 569
+elevation_feet = 4
 
-# ICAO code of the airport (e.g., "CYYZ" for Toronto Pearson)
-airport_code = "CYYZ"
+# ICAO code of the airport (e.g., "KPAO" for Palo Alto)
+airport_code = "KPAO"
 
 # Path to runway database JSON file
 runways_db_path = "assets/runways.json"
@@ -134,54 +134,34 @@ ffmpeg_reconnect_delay_secs = 2         # Reconnection delay in seconds (default
 # Each [[frequencies.sources]] block defines one monitored frequency
 
 
-# Toronto Pearson Ground Control
-#[[frequencies.sources]]
-#id = "cyyz_grd"                  # Unique identifier
-#airport = "CYYZ"                 # Toronto Pearson
-#name = "CYYZ Ground"             # Ground Control
-#frequency_mhz = 119.100          # 119.1 MHz
-#url = "https://s1-bos.liveatc.net/cyyz5"
-#order = 2                        # Second in display order
-#transcribe_audio = false         # Not transcribing this frequency
-
-# Toronto Pearson Tower
+# Palo Alto Ground
 [[frequencies.sources]]
-id = "cyyz_twr"                  # Unique identifier
-airport = "CYYZ"                 # Toronto Pearson
-name = "CYYZ Tower"              # Tower Control
-frequency_mhz = 118.700          # 118.7 MHz
-url = "https://s1-bos.liveatc.net/cyyz7"
+id = "kpao_grd"                  # Unique identifier
+airport = "KPAO"                 # Palo Alto
+name = "KPAO Ground"             # Ground Control
+frequency_mhz = 121.700          # 121.7 MHz
+url = "https://s1-fmt2.liveatc.net/kpao_grd"
+order = 2                        # Second in display order
+transcribe_audio = false         # Not transcribing this frequency
+
+# Palo Alto Tower
+[[frequencies.sources]]
+id = "kpao_twr"                  # Unique identifier
+airport = "KPAO"                 # Palo Alto
+name = "KPAO Tower"              # Tower Control
+frequency_mhz = 118.600          # 118.6 MHz
+url = "https://s1-fmt2.liveatc.net/kpao_twr"
 order = 3                        # Third in display order
 transcribe_audio = true          # Transcribe this frequency
 
-# Toronto Pearson Arrivals
+# NorCal Approach
 [[frequencies.sources]]
-id = "cyyz_arr"                  # Unique identifier
-airport = "CYYZ"                 # Toronto Pearson
-name = "CYYZ Arrivals"           # Arrivals Control
-frequency_mhz = 124.475          # 124.475 MHz
-url = "https://s1-fmt2.liveatc.net/cyyz6"
-order = 4                        # Fourth in display order
-transcribe_audio = false          # Transcribe this frequency
-
-# Toronto Pearson Departures
-[[frequencies.sources]]
-id = "cyyz_dep"                  # Unique identifier
-airport = "CYYZ"                 # Toronto Pearson
-name = "CYYZ Departures"         # Departures Control
-frequency_mhz = 127.575          # 127.575 MHz
-url = "https://s1-bos.liveatc.net/cyyz8"
-order = 5                        # Fifth in display order
-transcribe_audio = false         # Not transcribing this frequency
-
-# Local VHF Stream (RTLSDR-Airband + SRT server)
-[[frequencies.sources]]
-id = "cyyz_lcl"                  
-airport = "CYYZ"                
-name = "Local"         
-frequency_mhz = 133.7         
-url = "srt://192.168.1.166:42069"
-order = 6                      
+id = "norcal_app"                  
+airport = "KPAO"                
+name = "NorCal Approach"         
+frequency_mhz = 121.3
+url = "https://s1-fmt2.liveatc.net/ksjc_app_pao"
+order = 4                      
 transcribe_audio = true     
 
 #######################################################

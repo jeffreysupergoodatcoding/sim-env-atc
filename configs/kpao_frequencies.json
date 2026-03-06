@@ -1,0 +1,20 @@
+[
+  {
+    "id": "kpao_twr",
+    "airport": "KPAO",
+    "name": "Palo Alto Tower",
+    "frequency_mhz": 118.6,
+    "url": "https://s1-fmt2.liveatc.net/kpao1_twr",
+    "order": 1,
+    "transcribe_audio": true
+  },
+  {
+    "id": "kpao_grd",
+    "airport": "KPAO",
+    "name": "Palo Alto Ground",
+    "frequency_mhz": 125.0,
+    "url": "https://s1-fmt2.liveatc.net/kpao1_gnd",
+    "order": 2,
+    "transcribe_audio": true
+  }
+]

@@ -7,6 +7,7 @@ import (
 	"github.com/yegors/co-atc/internal/adsb"
 	"github.com/yegors/co-atc/internal/atcchat"
 	"github.com/yegors/co-atc/internal/config"
+	"github.com/yegors/co-atc/internal/demo"
 	"github.com/yegors/co-atc/internal/frequencies"
 	"github.com/yegors/co-atc/internal/simulation"
 	"github.com/yegors/co-atc/internal/storage/sqlite"
@@ -24,9 +25,9 @@ type Router struct {
 }
 
 // NewRouter creates a new API router
-func NewRouter(adsbService *adsb.Service, frequenciesService *frequencies.Service, weatherService *weather.Service, atcChatService *atcchat.Service, simulationService *simulation.Service, config *config.Config, logger *logger.Logger, wsServer *websocket.Server, transcriptionStorage *sqlite.TranscriptionStorage, clearanceStorage *sqlite.ClearanceStorage) *Router {
+func NewRouter(adsbService *adsb.Service, frequenciesService *frequencies.Service, weatherService *weather.Service, atcChatService *atcchat.Service, simulationService *simulation.Service, demoService *demo.Service, config *config.Config, logger *logger.Logger, wsServer *websocket.Server, transcriptionStorage *sqlite.TranscriptionStorage, clearanceStorage *sqlite.ClearanceStorage) *Router {
 	return &Router{
-		handler:    NewHandler(adsbService, frequenciesService, weatherService, atcChatService, simulationService, config, logger, wsServer, transcriptionStorage, clearanceStorage),
+		handler:    NewHandler(adsbService, frequenciesService, weatherService, atcChatService, simulationService, demoService, config, logger, wsServer, transcriptionStorage, clearanceStorage),
 		middleware: NewMiddleware(logger),
 		config:     config,
 		logger:     logger.Named("api-router"),
@@ -95,6 +96,11 @@ func (r *Router) Routes() http.Handler {
 		router.Put("/simulation/aircraft/{hex}/controls", r.handler.UpdateSimulationControls)
 		router.Delete("/simulation/aircraft/{hex}", r.handler.RemoveSimulatedAircraft)
 		router.Get("/simulation/aircraft", r.handler.GetSimulatedAircraft)
+
+		// Demo routes
+		router.Get("/demo/clips", r.handler.GetDemoClips)
+		router.Post("/demo/next", r.handler.NextDemoClip)
+		router.Post("/demo/reset", r.handler.ResetDemo)
 	})
 
 	// Serve static files from the configured directory

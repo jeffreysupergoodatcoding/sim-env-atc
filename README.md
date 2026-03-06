@@ -178,12 +178,12 @@ nano configs/config.toml
 ![Co-ATC Main Interface vs Tar1090](docs/split_tar1090.png)
 
 **Optional but Recommended:**
-- `[station]` - Configure your airport/station location (Toronto CYYZ example provided)
-- `[[frequencies.sources]]` - Add your local radio frequencies for transcription (Toronto examples provided)
+- `[station]` - Configure your airport/station location (Palo Alto KPAO example provided)
+- `[[frequencies.sources]]` - Add your local radio frequencies for transcription (Palo Alto examples provided)
 - `transcription.openai_api_key` - Enable AI transcription features (features disabled if not provided)
 - `atc_chat.openai_api_key` - Enable AI voice assistant (features disabled if not provided)
 
-The configuration file contains comprehensive documentation for all settings with examples for Toronto Pearson (CYYZ). You can use these as templates for your own location and frequencies.
+The configuration file contains comprehensive documentation for all settings with examples for Palo Alto (KPAO). You can use these as templates for your own location and frequencies.
 
 **Note**: If OpenAI API keys are not provided, the application will start successfully but AI-powered features (transcription, post-processing, and voice assistant) will be disabled. Warning messages will be displayed during startup to indicate which features are unavailable.
 

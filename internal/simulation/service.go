@@ -45,21 +45,42 @@ func NewService(logger *logger.Logger) *Service {
 	}
 }
 
-// CreateAircraft creates a new simulated aircraft
+// CreateAircraft creates a new simulated aircraft with random identifiers
 func (s *Service) CreateAircraft(lat, lon, altitude, heading, speed, verticalRate float64) (*SimulatedAircraft, error) {
+	// Generate unique identifiers
+	hex := s.generateUniqueHex()
+	flight := s.generateFlightNumber()
+	aircraft, err := s.RegisterAircraft(hex, flight, lat, lon, altitude, heading, speed, verticalRate)
+	if err != nil {
+		return nil, err
+	}
+	return aircraft.(*SimulatedAircraft), nil
+}
+
+// RegisterAircraft creates or updates a simulated aircraft with specific identifiers
+func (s *Service) RegisterAircraft(hex, flight string, lat, lon, altitude, heading, speed, verticalRate float64) (interface{}, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	// Check if hex already exists (update if so)
+	aircraft, exists := s.aircraft[hex]
+	if exists {
+		aircraft.CurrentLat = lat
+		aircraft.CurrentLon = lon
+		aircraft.CurrentAltitude = altitude
+		aircraft.TargetHeading = heading
+		aircraft.TargetSpeed = speed
+		aircraft.TargetVerticalRate = verticalRate
+		aircraft.LastUpdate = time.Now().UTC()
+		return aircraft, nil
+	}
 
 	// Check if we've reached the maximum
 	if len(s.aircraft) >= MaxSimulatedAircraft {
 		return nil, fmt.Errorf("maximum number of simulated aircraft (%d) reached", MaxSimulatedAircraft)
 	}
 
-	// Generate unique identifiers
-	hex := s.generateUniqueHex()
-	flight := s.generateFlightNumber()
-
-	aircraft := &SimulatedAircraft{
+	aircraft = &SimulatedAircraft{
 		Hex:                hex,
 		Flight:             flight,
 		AircraftType:       "SIM",
@@ -74,7 +95,7 @@ func (s *Service) CreateAircraft(lat, lon, altitude, heading, speed, verticalRat
 	}
 
 	s.aircraft[hex] = aircraft
-	s.logger.Info(fmt.Sprintf("Created simulated aircraft hex=%s flight=%s lat=%.6f lon=%.6f", hex, flight, lat, lon))
+	s.logger.Info(fmt.Sprintf("Registered simulated aircraft hex=%s flight=%s lat=%.6f lon=%.6f", hex, flight, lat, lon))
 
 	return aircraft, nil
 }

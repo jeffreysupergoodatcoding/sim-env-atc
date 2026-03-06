@@ -17,6 +17,7 @@ import (
 	"github.com/yegors/co-atc/internal/adsb"
 	"github.com/yegors/co-atc/internal/atcchat"
 	"github.com/yegors/co-atc/internal/config"
+	"github.com/yegors/co-atc/internal/demo"
 	"github.com/yegors/co-atc/internal/frequencies"
 	"github.com/yegors/co-atc/internal/simulation"
 	"github.com/yegors/co-atc/internal/storage/sqlite"
@@ -32,6 +33,7 @@ type Handler struct {
 	weatherService       *weather.Service
 	atcChatService       *atcchat.Service
 	simulationService    *simulation.Service
+	demoService          *demo.Service
 	config               *config.Config
 	logger               *logger.Logger
 	wsServer             *websocket.Server
@@ -40,13 +42,14 @@ type Handler struct {
 }
 
 // NewHandler creates a new API handler
-func NewHandler(adsbService *adsb.Service, frequenciesService *frequencies.Service, weatherService *weather.Service, atcChatService *atcchat.Service, simulationService *simulation.Service, config *config.Config, logger *logger.Logger, wsServer *websocket.Server, transcriptionStorage *sqlite.TranscriptionStorage, clearanceStorage *sqlite.ClearanceStorage) *Handler {
+func NewHandler(adsbService *adsb.Service, frequenciesService *frequencies.Service, weatherService *weather.Service, atcChatService *atcchat.Service, simulationService *simulation.Service, demoService *demo.Service, config *config.Config, logger *logger.Logger, wsServer *websocket.Server, transcriptionStorage *sqlite.TranscriptionStorage, clearanceStorage *sqlite.ClearanceStorage) *Handler {
 	return &Handler{
 		adsbService:          adsbService,
 		frequenciesService:   frequenciesService,
 		weatherService:       weatherService,
 		atcChatService:       atcChatService,
 		simulationService:    simulationService,
+		demoService:          demoService,
 		config:               config,
 		logger:               logger.Named("api-handler"),
 		wsServer:             wsServer,
@@ -499,6 +502,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 		"atc_chat": map[string]interface{}{
 			"enabled": h.config.ATCChat.Enabled,
 		},
+		"demo_mode": h.config.DemoMode,
 	}
 
 	WriteJSON(w, http.StatusOK, publicConfig)
@@ -1820,4 +1824,35 @@ func (h *Handler) GetSimulatedAircraft(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(aircraft)
+}
+
+// GetDemoClips returns all clips in the demo sequence
+func (h *Handler) GetDemoClips(w http.ResponseWriter, r *http.Request) {
+	clips := h.demoService.GetClips()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(clips)
+}
+
+// NextDemoClip advances to the next clip and returns it
+func (h *Handler) NextDemoClip(w http.ResponseWriter, r *http.Request) {
+	clip, ok := h.demoService.NextClip()
+	if !ok {
+		http.Error(w, "No more clips", http.StatusNotFound)
+		return
+	}
+
+	// Reset simulated aircraft to target state if it exists
+	if clip.Verified && clip.Callsign != "" {
+		// Log action to RLHF if needed (later)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(clip)
+}
+
+// ResetDemo resets the demo sequence
+func (h *Handler) ResetDemo(w http.ResponseWriter, r *http.Request) {
+	h.demoService.Reset()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "reset"})
 }

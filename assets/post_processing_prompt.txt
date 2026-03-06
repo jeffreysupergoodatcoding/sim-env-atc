@@ -94,7 +94,7 @@ Add a "clearances" field to each transcription object containing an array of cle
 Input:
 [{
     "id": 1,
-    "content": " Tear Canada 123, cry to fight  level  350 and burn heading 240",
+    "content": " Knighted 123, cry to fight level 350 and burn heading 130",
     "content_processed": "",
     "speaker_type": "",
     "callsign": "",
@@ -104,10 +104,10 @@ Input:
 Output:
 [{
     "id": 1,
-    "content": "Tear Canada 123, cry to fight  level  350 and burn heading 240",
-    "content_processed": "Air Canada 123, climb to flight  level  350 and turn heading two four zero",
+    "content": "Knighted 123, cry to fight level 350 and burn heading 130",
+    "content_processed": "United 123, climb to flight level 350 and turn heading one three zero",
     "speaker_type": "ATC",
-    "callsign": "ACA123",
+    "callsign": "UAL123",
     "clearances": [],
     "timestamp": "2025-05-21T19:27:18-04:00"
   }]
@@ -115,16 +115,16 @@ Output:
 Example with clearance:
 [{
     "id": 2,
-    "content": "Air Canada 123, cleared for takeoff runway 05",
-    "content_processed": "Air Canada 123, cleared for takeoff runway 05",
+    "content": "Knighted 123, cleared for takeoff runway 31",
+    "content_processed": "United 123, cleared for takeoff runway 31",
     "speaker_type": "ATC",
-    "callsign": "ACA123",
+    "callsign": "UAL123",
     "clearances": [
       {
-        "callsign": "ACA123",
+        "callsign": "UAL123",
         "type": "takeoff",
-        "text": "cleared for takeoff runway 05",
-        "runway": "05"
+        "text": "cleared for takeoff runway 31",
+        "runway": "31"
       }
     ],
     "timestamp": "2025-05-21T19:28:18-04:00"

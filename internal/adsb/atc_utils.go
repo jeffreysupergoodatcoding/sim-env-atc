@@ -559,8 +559,8 @@ func GetStationCoordinates() (float64, float64) {
 		return cfg.Station.Latitude, cfg.Station.Longitude
 	}
 
-	// Default to Toronto Pearson International Airport coordinates
-	return 43.6777, -79.6248
+	// Default to Palo Alto Airport coordinates
+	return 37.4611, -122.1151
 }
 
 // GetConfig returns the current configuration

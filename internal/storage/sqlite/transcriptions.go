@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/yegors/co-atc/internal/models"
 	"github.com/yegors/co-atc/pkg/logger"
 )
 
@@ -14,18 +15,8 @@ var (
 	Error  = logger.Error
 )
 
-// TranscriptionRecord represents a transcription record in the database
-type TranscriptionRecord struct {
-	ID               int64     `json:"id"`
-	FrequencyID      string    `json:"frequency_id"`
-	CreatedAt        time.Time `json:"created_at"`
-	Content          string    `json:"content"`
-	IsComplete       bool      `json:"is_complete"`
-	IsProcessed      bool      `json:"is_processed"`
-	ContentProcessed string    `json:"content_processed"`
-	SpeakerType      string    `json:"speaker_type,omitempty"` // "ATC" or "PILOT"
-	Callsign         string    `json:"callsign,omitempty"`     // Aircraft callsign if speaker is a pilot
-}
+// Use shared models
+type TranscriptionRecord = models.TranscriptionRecord
 
 // TranscriptionStorage handles storage of transcription records
 type TranscriptionStorage struct {

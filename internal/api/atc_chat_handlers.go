@@ -631,6 +631,30 @@ func (h *ATCChatHandlers) forwardOpenAIToClient(ctx context.Context, openaiConn 
 								}
 							}
 
+						case "conversation.item.input_audio_transcription.completed":
+							if transcript, ok := event["transcript"].(string); ok {
+								h.logger.Info("User message transcribed",
+									logger.String("session_id", session.ID),
+									logger.String("transcript", transcript))
+
+								// Log to database for RLHF
+								if err := h.service.LogChatMessage(ctx, session.ID, "user", transcript); err != nil {
+									h.logger.Warn("Failed to log user message", logger.Error(err))
+								}
+							}
+
+						case "response.audio_transcription.completed":
+							if transcript, ok := event["transcript"].(string); ok {
+								h.logger.Info("Assistant response transcribed",
+									logger.String("session_id", session.ID),
+									logger.String("transcript", transcript))
+
+								// Log to database for RLHF
+								if err := h.service.LogChatMessage(ctx, session.ID, "assistant", transcript); err != nil {
+									h.logger.Warn("Failed to log assistant message", logger.Error(err))
+								}
+							}
+
 						case "error":
 							h.logger.Error("Received error from OpenAI",
 								logger.String("session_id", session.ID),
